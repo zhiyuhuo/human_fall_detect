@@ -17,9 +17,12 @@ using namespace cv;
 
 const int IMGDEPTHWIDTH = 640;
 const int IMGDEPTHHEIGHT = 480;
-const int IMGDEPTHTYPE = CV_32FC1;
+const int IMGDEPTHTYPE = CV_16UC1;
+const int IMGDISTTYPE  = CV_32FC1;
 
 Mat img_depth;
+Mat img_down;
+Mat img_dist;
 
 void depthCallback(const sensor_msgs::ImageConstPtr& msg);
 
@@ -33,21 +36,25 @@ int main(int argc, char **argv)
   depth_time_ns = 0;
 
   // initialize data container
-  img_depth =cv::Mat::zeros(IMGDEPTHHEIGHT, IMGDEPTHWIDTH, IMGDEPTHTYPE);
+  img_depth = cv::Mat::zeros(IMGDEPTHHEIGHT, IMGDEPTHWIDTH, IMGDEPTHTYPE);
+  img_down  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDEPTHTYPE);
+  img_dist  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDISTTYPE);
 
   if_get_depth = false;
 
   ros::init(argc, argv, "image_listener");
   ros::NodeHandle nh;
 
-  ros::Subscriber sub_depth = nh.subscribe("/camera/depth/image_rect", 1, &depthCallback);
+  ros::Subscriber sub_depth = nh.subscribe("/camera/depth/image_raw", 1, &depthCallback);
 
   ros::Rate rate(30);
   while (ros::ok())
   {
     if ( if_get_depth ) {
 
-      cv::imshow("depth", img_depth);
+      cv::pyrDown(img_depth, img_down, cv::Size(img_down.cols, img_down.rows));
+      img_down.convertTo(img_dist, CV_32FC1, 1/1000.0);
+      cv::imshow("dist", img_dist);
       cv::waitKey(1);
       
     }
