@@ -41,7 +41,8 @@ ${PCL_INCLUDE_DIRS}
 ${OpenCV_INCLUDE_DIRS}
 )
 
-link_directories(${PCL_LIBRARY_DIRS} 
+link_directories(
+${PCL_LIBRARY_DIRS} 
 ${OpenCV_LIBS} )
 
 add_definitions(${PCL_DEFINITIONS})
@@ -50,9 +51,15 @@ add_definitions(${PCL_DEFINITIONS})
 ## Build ##
 ###########
 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+
+add_library(${PROJECT_NAME} SHARED
+        ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/HumanDetector.cpp
+        )
+
 ###########my output
 add_executable(human_fall_detect_node src/main.cc)
-target_link_libraries(human_fall_detect_node ${OpenCV_LIBS} ${PCL_LIBRARIES} ${catkin_LIBRARIES} )
+target_link_libraries(human_fall_detect_node ${PROJECT_NAME} ${OpenCV_LIBS} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 
 ###########my output end
 
