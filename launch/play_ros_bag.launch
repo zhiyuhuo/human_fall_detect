@@ -1,4 +1,4 @@
 <launch>
-    <node pkg="rosbag" type="play" name="player" args="/home/rokid/Videos/2017-09-07-15-14-56.bag"/> <!--Here Please use your own bag-->
+    <node pkg="rosbag" type="play" name="player" args="/home/rokid/Videos/2017-09-11-11-25-20.bag"/> <!--Here Please use your own bag-->
     <node pkg="human_fall_detect" type="human_fall_detect_node" name="human_fall_detect_node"/>
 </launch>

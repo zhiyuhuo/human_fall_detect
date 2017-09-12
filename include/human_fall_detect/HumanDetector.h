@@ -1,3 +1,4 @@
+#include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
@@ -10,6 +11,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/progressive_morphological_filter.h>
 
 #define DEPTH_IMG_FACTOR 0.5
 #define KINECT_FX 519*DEPTH_IMG_FACTOR
@@ -30,5 +32,7 @@ public:
     
 public:
     void ImportFromCvMat(cv::Mat img_dist);
+    std::vector<int> ExtractFloorFromScene();
     
 };
+

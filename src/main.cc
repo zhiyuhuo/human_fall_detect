@@ -26,54 +26,58 @@ Mat img_depth;
 Mat img_down;
 Mat img_dist;
 
+HumanDetector human_detector;
+
 void depthCallback(const sensor_msgs::ImageConstPtr& msg);
-
 bool if_get_depth;
-
 uint32_t depth_time_ns;
 
 
 int main(int argc, char **argv)
 {
-  depth_time_ns = 0;
+    depth_time_ns = 0;
 
-  // initialize data container
-  img_depth = cv::Mat::zeros(IMGDEPTHHEIGHT, IMGDEPTHWIDTH, IMGDEPTHTYPE);
-  img_down  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDEPTHTYPE);
-  img_dist  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDISTTYPE);
+    // initialize data container
+    img_depth = cv::Mat::zeros(IMGDEPTHHEIGHT, IMGDEPTHWIDTH, IMGDEPTHTYPE);
+    img_down  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDEPTHTYPE);
+    img_dist  = cv::Mat::zeros(IMGDEPTHHEIGHT/2, IMGDEPTHWIDTH/2, IMGDISTTYPE);
 
-  if_get_depth = false;
+    if_get_depth = false;
 
-  ros::init(argc, argv, "image_listener");
-  ros::NodeHandle nh;
+    ros::init(argc, argv, "image_listener");
+    ros::NodeHandle nh;
 
-  ros::Subscriber sub_depth = nh.subscribe("/camera/depth/image_raw", 1, &depthCallback);
+    ros::Subscriber sub_depth = nh.subscribe("/camera/depth/image_raw", 1, &depthCallback);
 
-  ros::Rate rate(30);
-  while (ros::ok())
-  {
-    if ( if_get_depth ) {
+    ros::Rate rate(30);
+    while (ros::ok())
+    {
+        if ( if_get_depth ) {
 
-      cv::pyrDown(img_depth, img_down, cv::Size(img_down.cols, img_down.rows));
-      img_down.convertTo(img_dist, CV_32FC1, 1/1000.0);
-      cv::imshow("dist", img_dist);
-      cv::waitKey(1);
-      
+            cv::pyrDown(img_depth, img_down, cv::Size(img_down.cols, img_down.rows));
+            img_down.convertTo(img_dist, CV_32FC1, 1/1000.0);
+            cv::imshow("dist", img_dist);
+            cv::waitKey(1);
+            
+            human_detector.ImportFromCvMat(img_dist);
+            
+
+        
+        }
+
+        ros::spinOnce();
+        rate.sleep();
     }
 
-    ros::spinOnce();
-    rate.sleep();
-  }
-
-  return 0;
+    return 0;
 }
 
 void depthCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  if_get_depth = true;
-  depth_time_ns = msg->header.stamp.nsec;
-  //depth_time_ns = msg->header.stamp.to_sec();
-  //std::cout << "depth: " << msg->width << " " << msg->height << " " << msg->step << " " << msg->encoding << endl;
-  std::memcpy(img_depth.data, (float*)&msg->data[0], msg->step*msg->height);
+    if_get_depth = true;
+    depth_time_ns = msg->header.stamp.nsec;
+    //depth_time_ns = msg->header.stamp.to_sec();
+    //std::cout << "depth: " << msg->width << " " << msg->height << " " << msg->step << " " << msg->encoding << endl;
+    std::memcpy(img_depth.data, (float*)&msg->data[0], msg->step*msg->height);
 }
 
