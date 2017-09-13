@@ -55,6 +55,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/HumanDetector.cpp
+        ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/FallDetector.cpp
         )
 
 ###########my output

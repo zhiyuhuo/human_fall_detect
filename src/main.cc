@@ -26,8 +26,6 @@ Mat img_depth;
 Mat img_down;
 Mat img_dist;
 
-HumanDetector human_detector;
-
 void depthCallback(const sensor_msgs::ImageConstPtr& msg);
 bool if_get_depth;
 uint32_t depth_time_ns;
@@ -57,11 +55,10 @@ int main(int argc, char **argv)
             cv::pyrDown(img_depth, img_down, cv::Size(img_down.cols, img_down.rows));
             img_down.convertTo(img_dist, CV_32FC1, 1/1000.0);
             cv::imshow("dist", img_dist);
-            cv::waitKey(1);
-            
+            HumanDetector human_detector;
             human_detector.ImportFromCvMat(img_dist);
-            
-
+            human_detector.ExtractFloorFromScene();
+            cv::waitKey(1);
         
         }
 

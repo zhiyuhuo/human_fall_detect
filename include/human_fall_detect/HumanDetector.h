@@ -12,6 +12,7 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/progressive_morphological_filter.h>
+#include <pcl/filters/voxel_grid.h>
 
 #define DEPTH_IMG_FACTOR 0.5
 #define KINECT_FX 519*DEPTH_IMG_FACTOR
@@ -24,7 +25,6 @@ class HumanDetector {
     
 public:
     HumanDetector();
-    HumanDetector(cv::Mat img_dist);
     ~HumanDetector();
     
 public:
