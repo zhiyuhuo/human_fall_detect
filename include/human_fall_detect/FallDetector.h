@@ -57,6 +57,9 @@ public:
     
     float GetFallConfidence();
     
+    // functions
+    void TransformPointCloud(cv::Mat R, cv::Mat t, std::vector<cv::Point3f>& points);
+    void OpenCVPointCloudViewer(cv::Mat& img, std::vector<cv::Point3f> points, std::vector<cv::Vec3b> colors);
 };
 
 #endif
