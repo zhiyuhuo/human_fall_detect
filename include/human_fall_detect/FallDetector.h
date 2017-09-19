@@ -58,8 +58,9 @@ public:
     float GetFallConfidence();
     
     // functions
+    cv::Point3f GetCentroidofPoints(std::vector<cv::Point3f>& points);
     void TransformPointCloud(cv::Mat R, cv::Mat t, std::vector<cv::Point3f>& points);
-    void OpenCVPointCloudViewer(cv::Mat& img, std::vector<cv::Point3f> points, std::vector<cv::Vec3b> colors);
+    void OpenCVPointCloudViewer(cv::Mat& img, std::vector<cv::Point3f> points, std::vector<int> index);
 };
 
 #endif
