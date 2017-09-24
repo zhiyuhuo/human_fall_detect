@@ -24,7 +24,7 @@ FallDetector::~FallDetector()
     
 }
 
-float FallDetector::GetMaxHeight(const std::vector<cv::Point3f>& points, int& maxheight_index)
+float FallDetector::GetMaxHeight(std::vector<cv::Point3f>& points)
 {
     float max_height = -1.0; 
     for (int i = 0; i < points.size(); i++) {
@@ -36,7 +36,7 @@ float FallDetector::GetMaxHeight(const std::vector<cv::Point3f>& points, int& ma
     return max_height;
 }
 
-float FallDetector::GetCentroidHeight(const std::vector<cv::Point3f>& points)
+float FallDetector::GetCentroidHeight(std::vector<cv::Point3f>& points)
 {
     float res = 0;
     cv::Point3f centroid = GetCentroidofPoints(points);
@@ -46,25 +46,94 @@ float FallDetector::GetCentroidHeight(const std::vector<cv::Point3f>& points)
     return res;
 }
 
-float FallDetector::GetProjectGround(const std::vector<cv::Point3f>& points)
+float FallDetector::GetProjectGround(std::vector<cv::Point3f>& points)
 {
     float res = 0;
     cv::Point3f centroid = GetCentroidofPoints(points);
     std::vector<cv::Point3f> points_local = points;
-    float cell_area = 0.0254*0.0254;
     for (int i = 0; i < points.size(); i++) {
-        points_local.x -= centroid.x;
-        points_local.y -= centroid.y;
+        points_local[i].x -= centroid.x;
+        points_local[i].y -= centroid.y;
     }
     
+    std::set<int> cells;
     float height_th = 0.38;
     for (int i = 0; i < points_local.size(); i++) {
-        if (points_local.z > height_th) {
-            int idx = points_local.x / 0.0254 + 10000 * points_local.y;
+        if (points_local[i].x > -1 && points_local[i].x < 1
+            && points_local[i].x > -1 && points_local[i].x < 1) {
+            if (points_local[i].z < height_th) {
+                cells.insert(int(points_local[i].x+0.5) + 20 * int(points_local[i].y+0.5));
+            }
         }
     }
     
-    std::set<int> cells_list(0);
+    res = cells.size();
+    return res;
+}
+
+float FallDetector::GetVerticalState(std::vector<cv::Point3f>& points)
+{
+    float Zmax = GetMaxHeight(points);
+    float Zcent = GetCentroidHeight(points);
+    float Zpg = GetProjectGround(points);
+    
+    float Kmax = 1.70;
+    float Kcent = 0.85; // kmax/2
+    float Kpg = 23.8;
+    
+    float Vs = (Zmax/Kmax + Zcent/Kcent + Zpg/Kpg);
+    return Vs;
+}
+
+void FallDetector::FilterVector(std::vector<float>& data, int win_size)
+{
+    
+}
+
+std::vector<double> FallDetector::GetEventSegmentation(std::vector<float>& Vs_set, std::vector<double>& Ts_set)
+{
+    std::vector<double> res(4, 0);
+    
+    int N = Vs_set.size();
+    int i_start;
+    int i_init;
+    int i_end;
+    int i_fall;
+    
+    int i = 0;
+    float Ttrig = 0.885;
+    float epsl = 0.05;
+    int f_rate = 10;
+    while (i < N-1) {
+        if (Vs_set[i] < Ttrig) {
+            i_start = i_init = i;
+            
+            while (i_start < N && Vs_set[i_start+1] < Vs_set[i_start]-epsl) {
+                i_start++;
+            }
+            
+            i_fall = i_start;
+            
+            while (i_fall > std::max(0, i_start - 4*f_rate) && Vs_set[i_fall-1] > Vs_set[i_fall]) {
+                i_fall = i_fall - 1;
+            }
+            
+            i_end = i_start;
+            
+            while (i_end < N-1 && Vs_set[i_end] < Ttrig) {
+                i_end++;
+            }
+            
+            i = i_end + 1;
+        } else {
+            i++;
+        }
+    }
+    
+    res[0] = Ts_set[i_fall];
+    res[1] = Ts_set[i_init];
+    res[2] = Ts_set[i_start];
+    res[3] = Ts_set[i_end];
     
     return res;
 }

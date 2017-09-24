@@ -22,9 +22,16 @@ public:
     ObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp);
     ~ObjectFrame();
     
-public:
+public: // raw data
     std::vector<cv::Point3f> points;
     double timeStamp;
+    
+public: // features
+    float fZmax;
+    float fZcent;
+    float fZpg;
+    
+    float fVs;
 };
 
 class FallDetector {
@@ -40,13 +47,13 @@ public:
     void AddObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp);
     
     // 1st Stage: Vertical State Characterization
-    float GetMaxHeight(const std::vector<cv::Point3f>& points);
-    float GetCentroidHeight(const std::vector<cv::Point3f>& points);
-    float GetProjectGround(const std::vector<cv::Point3f>& points);
+    float GetMaxHeight(std::vector<cv::Point3f>& points);
+    float GetCentroidHeight(std::vector<cv::Point3f>& points);
+    float GetProjectGround(std::vector<cv::Point3f>& points);
     
-    float GetVerticalState();
-    void  FilterObjectFrames();
-    void  GetEventTimeFromObjectFrames();
+    float GetVerticalState(std::vector<cv::Point3f>& points);
+    void  FilterVector(std::vector<float>& data, int win_size);
+    std::vector<double>  GetEventSegmentation(std::vector<float>& Vs_set, std::vector<double>& Ts_set);
     
     // 2nd Stage: On Ground Event Features
     float GetMinVerticalVelocity();
