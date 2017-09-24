@@ -13,12 +13,14 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/progressive_morphological_filter.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/passthrough.h>
 
 #define DEPTH_IMG_FACTOR 0.5
-#define KINECT_FX 519*DEPTH_IMG_FACTOR
+#define KINECT_FX (519*DEPTH_IMG_FACTOR)
 #define KINECT_FY KINECT_FX
-#define KINECT_CX 320*DEPTH_IMG_FACTOR
-#define KINECT_CY 240*DEPTH_IMG_FACTOR
+#define KINECT_CX (640*DEPTH_IMG_FACTOR/2)
+#define KINECT_CY (480*DEPTH_IMG_FACTOR/2)
 
 
 class HumanDetector {
@@ -29,10 +31,18 @@ public:
     
 public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudScene;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudVoxel;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudTranform;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudObjects;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
     
 public:
     void ImportFromCvMat(cv::Mat img_dist);
-    std::vector<int> ExtractFloorFromScene();
+    bool VoxelizePoints(float voxel_size);
+    bool TransformPointCloud();
+    bool PassthroughPointCloud();
+    
+    int  GetMainPlane();
     
 };
 

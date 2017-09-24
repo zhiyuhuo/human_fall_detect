@@ -59,9 +59,11 @@ add_library(${PROJECT_NAME} SHARED
         )
 
 ###########my output
-add_executable(human_fall_detect_node src/main.cc)
+add_executable(human_fall_detect_node src/main.cpp)
 target_link_libraries(human_fall_detect_node ${PROJECT_NAME} ${OpenCV_LIBS} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 
+add_executable(visualize_pc src/visualize_pc.cpp)
+target_link_libraries(visualize_pc ${PROJECT_NAME} ${OpenCV_LIBS} ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 ###########my output end
 
 
