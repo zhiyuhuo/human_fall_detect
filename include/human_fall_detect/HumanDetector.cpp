@@ -43,10 +43,10 @@ bool HumanDetector::VoxelizePoints(float voxel_size)
         return false;
     }
     
-    pcl::VoxelGrid<pcl::PointXYZ> sor;
-    sor.setInputCloud (m_cloudScene);
-    sor.setLeafSize (voxel_size, voxel_size, voxel_size);
-    sor.filter (*m_cloudVoxel);
+    pcl::VoxelGrid<pcl::PointXYZ> vg;
+    vg.setInputCloud (m_cloudScene);
+    vg.setLeafSize (voxel_size, voxel_size, voxel_size);
+    vg.filter (*m_cloudVoxel);
     
     return true;
 }
@@ -64,27 +64,37 @@ bool HumanDetector::TransformPointCloud()
     transform_1 (1,0) = sin (theta_z);
     transform_1 (1,1) = cos (theta_z);
     
-    Eigen::Matrix4f transform_2 = Eigen::Matrix4f::Identity();
-    float theta_y = M_PI;
-    transform_2 (0,0) = cos (theta_y);
-    transform_2 (0,1) = -sin(theta_y);
-    transform_2 (2,0) = sin (theta_y);
-    transform_2 (2,2) = cos (theta_y);
+//     Eigen::Matrix4f transform_2 = Eigen::Matrix4f::Identity();
+//     float theta_y = M_PI;
+//     transform_2 (0,0) = cos (theta_y);
+//     transform_2 (0,1) = -sin(theta_y);
+//     transform_2 (2,0) = sin (theta_y);
+//     transform_2 (2,2) = cos (theta_y);
     
     Eigen::Matrix4f transform_3 = Eigen::Matrix4f::Identity();
-    float theta_x = -M_PI / 10;
+    float theta_x = M_PI / 10;
     transform_3 (1,1) = cos (theta_x);
     transform_3 (1,2) = -sin(theta_x);
     transform_3 (2,1) = sin (theta_x);
     transform_3 (2,2) = cos (theta_x);
     
     Eigen::Matrix4f transform_4 = Eigen::Matrix4f::Identity();
-    float offset_y = 2.4;
-    transform_4 (0,3) = 0.0;
-    transform_4 (1,3) = offset_y;
-    transform_4 (2,3) = 0.0;
+    transform_4 (1,1) = 0;
+    transform_4 (2,2) = 0;
+    transform_4 (1,2) = 1;
+    transform_4 (2,1) = 1;
     
-    Eigen::Matrix4f transform = transform_4 * transform_3 * transform_2 * transform_1;
+    Eigen::Matrix4f transform_5 = Eigen::Matrix4f::Identity();
+    float offset_z = 2.4;
+    transform_5 (0,3) = 0.0;
+    transform_5 (1,3) = 0.0;
+    transform_5 (2,3) = offset_z;
+    
+    Eigen::Matrix4f transform = transform_5 
+                                * transform_4
+                                * transform_3 
+//                                 * transform_2 
+                                * transform_1;
     
     // You can either apply transform_1 or transform_2; they are the same
     pcl::transformPointCloud (*m_cloudVoxel, *m_cloudTranform, transform);
@@ -101,13 +111,22 @@ bool HumanDetector::PassthroughPointCloud()
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud (m_cloudTranform);
     pass.setFilterFieldName ("z");
-    pass.setFilterLimits (0.0, -3.0);
+    pass.setFilterLimits (0.10, 3.0);
+    pass.filter (*m_cloudPassthrough);
+    pass.setInputCloud (m_cloudPassthrough);
     pass.setFilterFieldName ("y");
-    pass.setFilterLimits (0.30, 3.0);
+    pass.setFilterLimits (0.0, 6.0);
+    pass.filter (*m_cloudPassthrough);
+    pass.setInputCloud (m_cloudPassthrough);
     pass.setFilterFieldName ("x");
     pass.setFilterLimits (-3.0, 3.0);
-    //pass.setFilterLimitsNegative (true);
     pass.filter (*m_cloudPassthrough);
+    
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
+    sor.setInputCloud (m_cloudPassthrough);
+    sor.setMeanK (50);
+    sor.setStddevMulThresh (0.20);
+    sor.filter (*m_cloudPassthrough);
     
     return true;
 }

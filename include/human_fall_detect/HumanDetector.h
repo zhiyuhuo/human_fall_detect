@@ -15,6 +15,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 #define DEPTH_IMG_FACTOR 0.5
 #define KINECT_FX (519*DEPTH_IMG_FACTOR)
