@@ -36,14 +36,23 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudTranform;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudObjects;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloud;
+    
+private 
+    pcl::PointXYZ mHumanPos;
     
 public:
+    
+    // point cloud processing
     void ImportFromCvMat(cv::Mat img_dist);
     bool VoxelizePoints(float voxel_size);
     bool TransformPointCloud();
     bool PassthroughPointCloud();
     
-    int  GetMainPlane();
+    // Get the floor 
+    int  GetMainPlane(); // TO DO. not necessary for deme
     
+    // Get the human target.
+    int ExtractAndTrackHumanTarget();
 };
 

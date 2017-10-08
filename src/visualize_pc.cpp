@@ -74,8 +74,8 @@ int main(int argc, char **argv)
             human_detector.PassthroughPointCloud();
             cv::waitKey(1);
             
-            pclViewer->removeAllPointClouds();
-            pclViewer->addPointCloud<pcl::PointXYZ> (human_detector.m_cloudPassthrough, "sample cloud");
+            pclViewer->updatePointCloud(human_detector.m_cloud, "sample cloud");
+            
             pclViewer->spinOnce (30);
         }
 
@@ -109,16 +109,17 @@ void viewerOneOff (pcl::visualization::PCLVisualizer& viewer)
 
 boost::shared_ptr<pcl::visualization::PCLVisualizer> simpleVis (pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
 {
-  // --------------------------------------------
-  // -----Open 3D viewer and add point cloud-----
-  // --------------------------------------------
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-  viewer->setBackgroundColor (0, 0, 0);
-  viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-  viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-  viewer->setCameraPosition(0, -3.0, 2.0, 0, 10, 0);
-  viewer->addCoordinateSystem (1.0);
-  viewer->initCameraParameters ();
-  return (viewer);
+    // --------------------------------------------
+    // -----Open 3D viewer and add point cloud-----
+    // --------------------------------------------
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    viewer->setBackgroundColor (0, 0, 0);
+
+    viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+    viewer->addCoordinateSystem (1.0);
+    viewer->initCameraParameters ();
+    viewer->setCameraPosition( 0, 0, 3.0, 0, 6.0, 0, 0, 0, 1 );
+    return (viewer);
 }
 

@@ -7,6 +7,10 @@ HumanDetector::HumanDetector()
     m_cloudTranform    =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudObjects     =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudPassthrough =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    m_cloud            =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    mHumanPos.x = 0;
+    mHumanPos.y = 0;
+    mHumanPos.z = 0;
 }
 
 HumanDetector::~HumanDetector()
@@ -111,11 +115,11 @@ bool HumanDetector::PassthroughPointCloud()
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud (m_cloudTranform);
     pass.setFilterFieldName ("z");
-    pass.setFilterLimits (0.10, 3.0);
+    pass.setFilterLimits (0.10, 2.0);
     pass.filter (*m_cloudPassthrough);
     pass.setInputCloud (m_cloudPassthrough);
     pass.setFilterFieldName ("y");
-    pass.setFilterLimits (0.0, 6.0);
+    pass.setFilterLimits (2.0, 6.0);
     pass.filter (*m_cloudPassthrough);
     pass.setInputCloud (m_cloudPassthrough);
     pass.setFilterFieldName ("x");
@@ -128,6 +132,7 @@ bool HumanDetector::PassthroughPointCloud()
     sor.setStddevMulThresh (0.20);
     sor.filter (*m_cloudPassthrough);
     
+    m_cloud = m_cloudPassthrough;
     return true;
 }
 
@@ -166,4 +171,10 @@ int HumanDetector::GetMainPlane()
     std::cerr << "m_cloudVoxel->points.size(): " << m_cloudVoxel->points.size() << std::endl;
     
     return inliers->indices.size();
+}
+
+int HumanDetector::ExtractAndTrackHumanTarget()
+{
+    
+    
 }
