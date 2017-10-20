@@ -175,6 +175,16 @@ int HumanDetector::GetMainPlane()
 
 int HumanDetector::ExtractAndTrackHumanTarget()
 {
-    
-    
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud (m_cloud);
+
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance (0.20); // 2cm
+    ec.setMinClusterSize (3);
+    ec.setMaxClusterSize (100);
+    ec.setSearchMethod (tree);
+    ec.setInputCloud (m_cloud);
+    ec.extract (cluster_indices);
+    std::cout << cluster_indices.size() << std::endl;
 }

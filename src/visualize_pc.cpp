@@ -69,9 +69,10 @@ int main(int argc, char **argv)
             cv::imshow("dist", img_show);
 
             human_detector.ImportFromCvMat(img_dist);
-            human_detector.VoxelizePoints(0.05);
+            human_detector.VoxelizePoints(0.03);
             human_detector.TransformPointCloud();
             human_detector.PassthroughPointCloud();
+            human_detector.ExtractAndTrackHumanTarget();
             cv::waitKey(1);
             
             pclViewer->updatePointCloud(human_detector.m_cloud, "sample cloud");
@@ -119,7 +120,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> simpleVis (pcl::PointCloud<
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
     viewer->addCoordinateSystem (1.0);
     viewer->initCameraParameters ();
-    viewer->setCameraPosition( 0, 0, 3.0, 0, 6.0, 0, 0, 0, 1 );
+    viewer->setCameraPosition( 0, -3.0, 8.0, 0, 6.0, 0, 0, 0, 1 );
     return (viewer);
 }
 

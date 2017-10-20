@@ -38,7 +38,7 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloud;
     
-private 
+private:
     pcl::PointXYZ mHumanPos;
     
 public:
