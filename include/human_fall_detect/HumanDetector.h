@@ -1,5 +1,5 @@
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
@@ -30,7 +30,7 @@ public:
     HumanDetector();
     ~HumanDetector();
     
-public:
+public: // 3D point cloud data. the point cloud will be processed in the containers from top to down.
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudScene;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudVoxel;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudTranform;
@@ -38,12 +38,15 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloud;
     
-private:
+private: // the centroid of the human target.
     pcl::PointXYZ mHumanPos;
+    // the probabiliy grid map which check if the region can be consider as occupied zone.
+    // the point cloud falling on the occupied zone will not be checked.
+    cv::Mat mGridMap;
     
 public:
     
-    // point cloud processing
+    // point cloud pre-processing (downsampling, transformation(from camera ego coordiate to floow coordinate), and passing through).
     void ImportFromCvMat(cv::Mat img_dist);
     bool VoxelizePoints(float voxel_size);
     bool TransformPointCloud();
@@ -54,5 +57,9 @@ public:
     
     // Get the human target.
     int ExtractAndTrackHumanTarget();
+    
+    // Learn the grid map from the scene
+    int LearnGridMap();
+    int NormalizeGridMap();
 };
 

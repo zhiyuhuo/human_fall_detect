@@ -2,15 +2,21 @@
 
 HumanDetector::HumanDetector()
 {
-    m_cloudScene       =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);   
+    // point clouds
+    m_cloudScene       =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudVoxel       =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudTranform    =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudObjects     =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudPassthrough =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloud            =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    
+    // human centroid
     mHumanPos.x = 0;
     mHumanPos.y = 0;
     mHumanPos.z = 0;
+    
+    // probability grid map
+    mGridMap = cv::Mat::zeros(60, 60, CV_32FC1);
 }
 
 HumanDetector::~HumanDetector()
@@ -129,7 +135,7 @@ bool HumanDetector::PassthroughPointCloud()
     pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
     sor.setInputCloud (m_cloudPassthrough);
     sor.setMeanK (50);
-    sor.setStddevMulThresh (0.20);
+    sor.setStddevMulThresh (0.10);
     sor.filter (*m_cloudPassthrough);
     
     m_cloud = m_cloudPassthrough;
@@ -175,16 +181,47 @@ int HumanDetector::GetMainPlane()
 
 int HumanDetector::ExtractAndTrackHumanTarget()
 {
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree->setInputCloud (m_cloud);
+    VoxelizePoints(0.05);
+    TransformPointCloud();
+    PassthroughPointCloud();
+    
+//     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+//     tree->setInputCloud (m_cloud);
+// 
+//     std::vector<pcl::PointIndices> cluster_indices;
+//     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+//     ec.setClusterTolerance (0.20); // 2cm
+//     ec.setMinClusterSize (3);
+//     ec.setMaxClusterSize (100);
+//     ec.setSearchMethod (tree);
+//     ec.setInputCloud (m_cloud);
+//     ec.extract (cluster_indices);
+//     std::cout << cluster_indices.size() << std::endl;
+}
 
-    std::vector<pcl::PointIndices> cluster_indices;
-    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance (0.20); // 2cm
-    ec.setMinClusterSize (3);
-    ec.setMaxClusterSize (100);
-    ec.setSearchMethod (tree);
-    ec.setInputCloud (m_cloud);
-    ec.extract (cluster_indices);
-    std::cout << cluster_indices.size() << std::endl;
+int HumanDetector::LearnGridMap()
+{
+    cv::Mat checkedMap = cv::Mat::zeros(mGridMap.rows, mGridMap.cols, CV_8UC1);
+    const int step = checkedMap.cols;
+    for (int i = 0; i < m_cloud.points.size(); i++) {
+        int xx = int(m_cloud.points[i].x / 0.1 + 0.5) + mGridMap.cols/2;
+        int yy = int(m_cloud.points[i].y / 0.1 + 0.5) + mGridMap.rows/2;
+        checkedMap.data[xx + yy * step] = 1;
+    }
+    
+    float* gridMapData = mGridMap.ptr<float>(0);
+    for (int i = 0; i < mGridMap.cols * mGridMap.rows; i++) {
+        if (checkedMap.at[i]) {
+            gridMapData[i]++;
+        }
+    }
+    
+    return 0;
+}
+
+int HumanDetector::NormalizeGridMap()
+{
+    double minValue, maxValue;
+    cv::minMaxLoc(mGridMap, &minValue, &maxValue);
+    mGridMap = mGridMap / maxValue;
 }

@@ -69,9 +69,6 @@ int main(int argc, char **argv)
             cv::imshow("dist", img_show);
 
             human_detector.ImportFromCvMat(img_dist);
-            human_detector.VoxelizePoints(0.03);
-            human_detector.TransformPointCloud();
-            human_detector.PassthroughPointCloud();
             human_detector.ExtractAndTrackHumanTarget();
             cv::waitKey(1);
             
