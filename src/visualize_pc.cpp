@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 
             human_detector.ImportFromCvMat(img_dist);
             human_detector.ExtractAndTrackHumanTarget();
+            human_detector.Preprocess();
             cv::waitKey(1);
             
             pclViewer->updatePointCloud(human_detector.m_cloud, "sample cloud");

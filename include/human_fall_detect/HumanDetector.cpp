@@ -9,6 +9,7 @@ HumanDetector::HumanDetector()
     m_cloudObjects     =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloudPassthrough =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     m_cloud            =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    m_cloudHuman       =    pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     
     // human centroid
     mHumanPos.x = 0;
@@ -16,7 +17,11 @@ HumanDetector::HumanDetector()
     mHumanPos.z = 0;
     
     // probability grid map
-    mGridMap = cv::Mat::zeros(60, 60, CV_32FC1);
+    mGridMap = cv::Mat::zeros(100, 100, CV_32FC1);
+    
+    // frame counter
+    mCountFrame = 0;
+    mIfPreprocessReady = false;
 }
 
 HumanDetector::~HumanDetector()
@@ -138,8 +143,48 @@ bool HumanDetector::PassthroughPointCloud()
     sor.setStddevMulThresh (0.10);
     sor.filter (*m_cloudPassthrough);
     
-    m_cloud = m_cloudPassthrough;
     return true;
+}
+
+bool HumanDetector::PassthroughHumanTarget()
+{
+    bool res = false;
+    m_cloudHuman->clear();
+    
+    // remove the points in the occupied regions
+    if (mIfPreprocessReady) {
+        for (int i = 0; i < m_cloudPassthrough->points.size(); i++) {
+            int xx = int(m_cloudPassthrough->points[i].x / 0.1 + 0.5) + mGridMap.cols/2;
+            int yy = int(m_cloudPassthrough->points[i].y / 0.1 + 0.5);
+            
+            if (mGridMap.at<float>(yy,xx) == 0) {
+                m_cloudHuman->push_back(m_cloudPassthrough->points[i]);
+            }
+        }
+    }
+    
+    // find the centroid of the current point cloud;
+    float cx = 0;
+    float cy = 0;
+    for (int i = 0; i < m_cloudHuman->points.size(); i++) {
+        cx += m_cloudHuman->points[i].x;
+        cy += m_cloudHuman->points[i].y;
+    }
+    
+    cx /= m_cloudHuman->size();
+    cy /= m_cloudHuman->size();
+    
+    pcl::PassThrough<pcl::PointXYZ> pass;
+    pass.setInputCloud (m_cloudHuman);
+    pass.setFilterFieldName ("y");
+    pass.setFilterLimits (cy-0.5, cy+0.5);
+    pass.filter (*m_cloudHuman);
+    pass.setInputCloud (m_cloudHuman);
+    pass.setFilterFieldName ("x");
+    pass.setFilterLimits (cx-0.5, cx+0.5);
+    pass.filter (*m_cloudHuman);
+    
+    return res;
 }
 
 int HumanDetector::GetMainPlane()
@@ -184,34 +229,29 @@ int HumanDetector::ExtractAndTrackHumanTarget()
     VoxelizePoints(0.05);
     TransformPointCloud();
     PassthroughPointCloud();
+    PassthroughHumanTarget();
     
-//     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-//     tree->setInputCloud (m_cloud);
-// 
-//     std::vector<pcl::PointIndices> cluster_indices;
-//     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-//     ec.setClusterTolerance (0.20); // 2cm
-//     ec.setMinClusterSize (3);
-//     ec.setMaxClusterSize (100);
-//     ec.setSearchMethod (tree);
-//     ec.setInputCloud (m_cloud);
-//     ec.extract (cluster_indices);
-//     std::cout << cluster_indices.size() << std::endl;
+    m_cloud = m_cloudHuman;
 }
 
 int HumanDetector::LearnGridMap()
 {
-    cv::Mat checkedMap = cv::Mat::zeros(mGridMap.rows, mGridMap.cols, CV_8UC1);
-    const int step = checkedMap.cols;
-    for (int i = 0; i < m_cloud.points.size(); i++) {
-        int xx = int(m_cloud.points[i].x / 0.1 + 0.5) + mGridMap.cols/2;
-        int yy = int(m_cloud.points[i].y / 0.1 + 0.5) + mGridMap.rows/2;
-        checkedMap.data[xx + yy * step] = 1;
+    const int width = mGridMap.cols;
+    const int height = mGridMap.rows;
+    cv::Mat checkedMap = cv::Mat::zeros(height, width, CV_8UC1);
+    const int step = width;
+    for (int i = 0; i < m_cloudPassthrough->points.size(); i++) {
+        int xx = int(m_cloudPassthrough->points[i].x / 0.1 + 0.5) + mGridMap.cols/2;
+        int yy = int(m_cloudPassthrough->points[i].y / 0.1 + 0.5);
+        
+        if (xx >=0 && xx < width && yy >=0 && yy < height) {
+            checkedMap.data[xx + yy * step] = 1;
+        }
     }
     
     float* gridMapData = mGridMap.ptr<float>(0);
     for (int i = 0; i < mGridMap.cols * mGridMap.rows; i++) {
-        if (checkedMap.at[i]) {
+        if (checkedMap.data[i]) {
             gridMapData[i]++;
         }
     }
@@ -224,4 +264,30 @@ int HumanDetector::NormalizeGridMap()
     double minValue, maxValue;
     cv::minMaxLoc(mGridMap, &minValue, &maxValue);
     mGridMap = mGridMap / maxValue;
+    
+    float* gridMapData = mGridMap.ptr<float>(0);
+    for (int i = 0; i < mGridMap.cols * mGridMap.rows; i++) {
+        if (gridMapData[i] < 0.1) {
+            gridMapData[i] = 0;
+        } else 
+        {
+            gridMapData[i] = 1.0;
+        }
+    }
+    
+    cv::imshow("grid map", mGridMap);
 }
+
+int HumanDetector::Preprocess()
+{
+    if (mCountFrame < 30) { 
+        LearnGridMap();
+    }
+    else if (mCountFrame == 30) {
+        NormalizeGridMap();
+        mIfPreprocessReady = true;
+    }
+    mCountFrame++;
+}
+
+

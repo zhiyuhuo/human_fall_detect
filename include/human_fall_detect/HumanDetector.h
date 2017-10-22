@@ -37,12 +37,17 @@ public: // 3D point cloud data. the point cloud will be processed in the contain
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudObjects;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudHuman;
     
 private: // the centroid of the human target.
     pcl::PointXYZ mHumanPos;
     // the probabiliy grid map which check if the region can be consider as occupied zone.
     // the point cloud falling on the occupied zone will not be checked.
     cv::Mat mGridMap;
+    
+    // count how many frames has been captured
+    int mCountFrame;
+    bool mIfPreprocessReady;
     
 public:
     
@@ -51,6 +56,7 @@ public:
     bool VoxelizePoints(float voxel_size);
     bool TransformPointCloud();
     bool PassthroughPointCloud();
+    bool PassthroughHumanTarget();
     
     // Get the floor 
     int  GetMainPlane(); // TO DO. not necessary for deme
@@ -61,5 +67,9 @@ public:
     // Learn the grid map from the scene
     int LearnGridMap();
     int NormalizeGridMap();
+    
+    // pre-process
+    int Preprocess();
+
 };
 
