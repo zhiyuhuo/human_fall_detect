@@ -1,6 +1,6 @@
 #include "FallDetector.h"
 
-ObjectFrame::ObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp)
+ObjectFrame::ObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, float time_stamp)
 {
     points.clear();
     for (int i = 0; i < cloud->points.size(); i++) {
@@ -22,6 +22,24 @@ FallDetector::FallDetector()
 FallDetector::~FallDetector()
 {
     
+}
+
+void FallDetector::AddObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, float time_stamp)
+{
+    m_objectFrameSet.push_back(ObjectFrame(cloud, time_stamp));
+}
+
+void FallDetector::ProcessObjectFrame()
+{
+    // get the vertical state of each frame and save it to m_objectFrameSet.
+    float verticalState = GetVerticalState(m_objectFrameSet.back().points);
+    std::cout << "vertical state: " << verticalState << ", " << m_objectFrameSet.back().timeStamp << std::endl;
+    m_objectFrameSet.back().fVs = verticalState;
+
+    // Get the key frames of a fall.
+    if (m_objectFrameSet.back().timeStamp > 190) {
+        AnalyzeFallEvent();
+    }
 }
 
 float FallDetector::GetMaxHeight(std::vector<cv::Point3f>& points)
@@ -90,9 +108,9 @@ void FallDetector::FilterVector(std::vector<float>& data, int win_size)
     
 }
 
-std::vector<double> FallDetector::GetEventSegmentation(std::vector<float>& Vs_set, std::vector<double>& Ts_set)
+std::vector<float> FallDetector::GetEventSegmentation(std::vector<float>& Vs_set, std::vector<float>& Ts_set, int f_rate)
 {
-    std::vector<double> res(4, 0);
+    std::vector<float> res(4, 0);
     
     int N = Vs_set.size();
     int i_start;
@@ -103,7 +121,7 @@ std::vector<double> FallDetector::GetEventSegmentation(std::vector<float>& Vs_se
     int i = 0;
     float Ttrig = 0.885;
     float epsl = 0.05;
-    int f_rate = 10;
+
     while (i < N-1) {
         if (Vs_set[i] < Ttrig) {
             i_start = i_init = i;
@@ -138,9 +156,113 @@ std::vector<double> FallDetector::GetEventSegmentation(std::vector<float>& Vs_se
     return res;
 }
 
-void FallDetector::AddObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp)
+int FallDetector::AnalyzeFallEvent()
 {
-    m_objectFrameSet.push_back(ObjectFrame(cloud, time_stamp));
+    std::vector<float> vsSet;
+    std::vector<float> tsSet;
+    float fRate = 1;
+
+    int StartFrame = 130;
+    int EndFrame   = 180;
+    for (int i = StartFrame; i < EndFrame; i++) {
+        vsSet.push_back(m_objectFrameSet[i].fVs);
+        tsSet.push_back(m_objectFrameSet[i].timeStamp);
+    }
+
+    std::vector<float> fallTime = GetEventSegmentation(vsSet, tsSet, fRate);
+    std::cout << "fall: " << fallTime[0] 
+              << " init: " << fallTime[1]
+              << " start: " << fallTime[2]
+              << " fend: " << fallTime[3] << std::endl; 
+
+    mVsSet     = vsSet;
+    mTsSet     = tsSet;
+    mKeyframes = fallTime;
+    return 1;
+}
+
+float FallDetector::GetMinVerticalVelocity(float& timeStampMinVV)
+{
+    float res;
+    
+    float tfall  = mKeyframes[0];
+    float tstart = mKeyframes[1];
+    float minVV = 999999.;
+    float tMinVV = 0;
+    for (int i = 0; i < mVsSet.size(); i++) {
+        if (mTsSet[i] >= tfall && mTsSet[i] <= tstart) {
+            float VV = fabs((mVsSet[i+1] - mVsSet[i-1]) / 2);
+            if (VV < minVV) {
+                minVV = VV;
+                tMinVV = mTsSet[i];
+            }
+        }
+    }
+    res = minVV;
+    timeStampMinVV = tMinVV;
+
+    return res;
+}
+
+float FallDetector::GetMaxVerticalAcceleration(float timeStampMinVV) 
+{
+    float res;
+    
+    float tstart = mKeyframes[1];
+    float maxVA = 0.;
+    for (int i = 0; i < mVsSet.size(); i++) {
+        if (mTsSet[i] >= timeStampMinVV && mTsSet[i] <= tstart) {
+            float VA = fabs((mVsSet[i+1] + mVsSet[i-1] - 2*mVsSet[i]) / 2);
+            if (VA > maxVA) {
+                maxVA = VA;
+            }
+        }
+    }
+    res = maxVA;
+
+    return res;
+}
+
+float FallDetector::GetMeanVavg()
+{
+    float res;
+    
+    float tstart = mKeyframes[1];
+    float tfend  = mKeyframes[3];
+    float meanVV = 0;
+    for (int i = 0; i < mVsSet.size(); i++) {
+        if (mTsSet[i] > tstart && mTsSet[i] <= tfend) {
+            meanVV += mVsSet[i];
+        }
+    }
+    res = meanVV / (tfend - tstart);
+
+    return res;
+
+}
+
+float FallDetector::GetOcclusionAdjustedChangeInZpg()
+{
+    float res;
+
+    return res;
+}
+
+float FallDetector::GetMinimumFrameToFrameVerticalVelocity()
+{
+    float res;
+
+    return res;
+}
+
+float FallDetector::GetFallConfidence()
+{
+    float timeStampMinVV;
+    float minVV = GetMinVerticalVelocity(timeStampMinVV);
+    float maxVA = GetMaxVerticalAcceleration(timeStampMinVV);
+    float meanV = GetMeanVavg();
+    float OACZ  = GetOcclusionAdjustedChangeInZpg();
+    float MFFVV = GetMinimumFrameToFrameVerticalVelocity();
 }
 
 cv::Point3f FallDetector::GetCentroidofPoints(std::vector<cv::Point3f>& points)
@@ -152,7 +274,11 @@ cv::Point3f FallDetector::GetCentroidofPoints(std::vector<cv::Point3f>& points)
         res = res + points[i];
     }
     
-    res = res * (1.0 / N);
+    if (N > 0) {
+        res = res * (1.0 / N);
+    } else {
+        res = cv::Point3f(0, 0, 0);
+    }
     
     return res;
 }
@@ -170,7 +296,3 @@ void FallDetector::TransformPointCloud(cv::Mat R, cv::Mat t, std::vector<cv::Poi
     }
 }
 
-void FallDetector::OpenCVPointCloudViewer(cv::Mat& img, std::vector<cv::Point3f> points, std::vector<int> index)
-{
-    
-}

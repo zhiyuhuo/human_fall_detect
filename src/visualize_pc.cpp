@@ -67,11 +67,11 @@ int main(int argc, char **argv)
             img_down.convertTo(img_dist, CV_32FC1, 1/1000.0);
             cv::Mat img_show = img_dist.clone() / 6.0;
             cv::imshow("dist", img_show);
+            cv::waitKey(1);
 
             human_detector.ImportFromCvMat(img_dist);
             human_detector.ExtractAndTrackHumanTarget();
             human_detector.Preprocess();
-            cv::waitKey(1);
             
             pclViewer->updatePointCloud(human_detector.m_cloud, "sample cloud");
             

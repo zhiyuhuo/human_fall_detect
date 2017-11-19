@@ -17,6 +17,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
+#include "FallDetector.h"
+
 #define DEPTH_IMG_FACTOR 0.5
 #define KINECT_FX (519*DEPTH_IMG_FACTOR)
 #define KINECT_FY KINECT_FX
@@ -38,6 +40,10 @@ public: // 3D point cloud data. the point cloud will be processed in the contain
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudPassthrough;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloud;
     pcl::PointCloud<pcl::PointXYZ>::Ptr m_cloudHuman;
+
+private:
+    float m_timeStamp;
+    FallDetector m_fallDetector;
     
 private: // the centroid of the human target.
     pcl::PointXYZ mHumanPos;

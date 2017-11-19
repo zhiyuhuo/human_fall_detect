@@ -231,6 +231,9 @@ int HumanDetector::ExtractAndTrackHumanTarget()
     PassthroughPointCloud();
     PassthroughHumanTarget();
     
+    m_fallDetector.AddObjectFrame(m_cloudHuman, (float)mCountFrame);
+    m_fallDetector.ProcessObjectFrame();
+
     m_cloud = m_cloudHuman;
 }
 

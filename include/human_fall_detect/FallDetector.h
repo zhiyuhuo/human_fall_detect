@@ -19,12 +19,12 @@
 
 class ObjectFrame {
 public:
-    ObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp);
+    ObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, float time_stamp);
     ~ObjectFrame();
     
 public: // raw data
     std::vector<cv::Point3f> points;
-    double timeStamp;
+    float timeStamp;
     
 public: // features
     float fZmax;
@@ -42,9 +42,13 @@ public:
     
 public:
     std::vector<ObjectFrame> m_objectFrameSet;
+    std::vector<float> mKeyframes;
+    std::vector<float> mVsSet;
+    std::vector<float> mTsSet;
     
 public:
-    void AddObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, double time_stamp);
+    void  AddObjectFrame(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, float time_stamp);
+    void  ProcessObjectFrame();
     
     // 1st Stage: Vertical State Characterization
     float GetMaxHeight(std::vector<cv::Point3f>& points);
@@ -53,11 +57,12 @@ public:
     
     float GetVerticalState(std::vector<cv::Point3f>& points);
     void  FilterVector(std::vector<float>& data, int win_size);
-    std::vector<double>  GetEventSegmentation(std::vector<float>& Vs_set, std::vector<double>& Ts_set);
+    std::vector<float>  GetEventSegmentation(std::vector<float>& Vs_set, std::vector<float>& Ts_set, int f_rate);
+    int   AnalyzeFallEvent();
     
     // 2nd Stage: On Ground Event Features
-    float GetMinVerticalVelocity();
-    float GetMaxVerticalVelocity();
+    float GetMinVerticalVelocity(float& timeStampMinVV);
+    float GetMaxVerticalAcceleration(float timeStampMinVV) ;
     float GetMeanVavg();
     float GetOcclusionAdjustedChangeInZpg();
     float GetMinimumFrameToFrameVerticalVelocity();
@@ -66,8 +71,8 @@ public:
     
     // functions
     cv::Point3f GetCentroidofPoints(std::vector<cv::Point3f>& points);
-    void TransformPointCloud(cv::Mat R, cv::Mat t, std::vector<cv::Point3f>& points);
-    void OpenCVPointCloudViewer(cv::Mat& img, std::vector<cv::Point3f> points, std::vector<int> index);
+    void  TransformPointCloud(cv::Mat R, cv::Mat t, std::vector<cv::Point3f>& points);
+
 };
 
 #endif
